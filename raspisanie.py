@@ -1,15 +1,13 @@
 import requests
-import time
-from datetime import date, timedelta
 import hashlib
 import json
 import os
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from datetime import date, timedelta
 from datetime import datetime
+from requests.adapters import HTTPAdapter
 
-BOT_TOKEN = "6755633470:AAFWSdB4K44hLF98J27u4YwczLe9hDlZ7jk"
-CHAT_ID = "-1003790417383"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 BASE_URL = "https://sh2-kuvandyk-r56.gosweb.gosuslugi.ru/netcat_files/24/3008/Raspisanie_na_{}.jpg"
 HASH_FILE = "last_hashes.json"
@@ -35,24 +33,20 @@ def save_hashes(hashes):
 
 last_hashes = load_hashes()
 
-log("🚀 Скрипт запущен с выводом в консоль")
-log("Проверяем ТОЛЬКО завтра каждые 10 секунд")
+log("🚀 GitHub Actions запустился")
+log("Проверяем ТОЛЬКО завтра")
 
-while True:
-    try:
-        tomorrow = date.today() + timedelta(days=1)
-        date_str = tomorrow.strftime("%d.%m")
-        url = BASE_URL.format(date_str)
-        
-        log(f"Проверяю завтра: {date_str} → {url}")
-        
-        r = session.get(url, headers=HEADERS, timeout=20)
-        log(f"   Статус: {r.status_code} | Размер: {len(r.content)/1024:.1f} КБ" if r.status_code == 200 else f"   Статус: {r.status_code} (ещё не выложили)")
-        
-        if r.status_code != 200:
-            time.sleep(10)
-            continue
-            
+try:
+    tomorrow = date.today() + timedelta(days=1)
+    date_str = tomorrow.strftime("%d.%m")
+    url = BASE_URL.format(date_str)
+    
+    log(f"Проверяю завтра: {date_str} → {url}")
+    
+    r = session.get(url, headers=HEADERS, timeout=20)
+    log(f"   Статус: {r.status_code} | Размер: {len(r.content)/1024:.1f} КБ" if r.status_code == 200 else f"   Статус: {r.status_code} (ещё не выложили)")
+    
+    if r.status_code == 200:
         content = r.content
         current_hash = hashlib.md5(content).hexdigest()
         
@@ -73,9 +67,10 @@ while True:
                 log(f"   ❌ Ошибка отправки: {resp.status_code}")
         else:
             log("   ✅ Уже отправляли эту версию (пропускаем)")
-            
-    except Exception as e:
-        log(f"Ошибка: {e}")
-    
-    log("Жду 10 секунд...\n")
-    time.sleep(10)
+    else:
+        log("   Расписание на завтра ещё не появилось")
+        
+except Exception as e:
+    log(f"Ошибка: {e}")
+
+log("Проверка завершена. Следующий запуск через ~5 минут")
