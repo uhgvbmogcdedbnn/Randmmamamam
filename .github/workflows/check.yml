@@ -1,32 +1,37 @@
-name: Расписание школы
+name: Расписание школы Кувандык
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # каждые 5 минут
-  workflow_dispatch:
+    - cron: '*/5 * * * *'   # каждые 5 минут 24/7
+  workflow_dispatch:        # можно запустить вручную кнопкой
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout код
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-python@v5
+      - name: Установка Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
-      - run: pip install -r requirements.txt
+      - name: Установка библиотек
+        run: pip install -r requirements.txt
 
-      - env:
+      - name: Запуск скрипта
+        env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python raspisanie.py
 
-      - run: |
+      - name: Сохранить изменения хэшей (если были новые)
+        run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add last_hashes.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update hashes" && git push
+          git diff --quiet && git diff --staged --quiet || git commit -m "Обновлены хэши расписания" && git push
         continue-on-error: true
